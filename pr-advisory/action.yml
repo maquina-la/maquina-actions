@@ -18,6 +18,10 @@ inputs:
     description: Newline-separated completed workflow evidence in NAME=CONCLUSION form.
     required: false
     default: ""
+  publish-comment:
+    description: Create or update the one marked operational-advisory comment on a trusted same-repository PR.
+    required: false
+    default: "false"
 
 outputs:
   evidence-json:
@@ -26,6 +30,9 @@ outputs:
   evidence-markdown:
     description: Repository-relative path to the sanitized Markdown evidence record.
     value: ${{ steps.advisory.outputs.evidence-markdown }}
+  comment-action:
+    description: "Comment publication result: disabled, suppressed, created, or updated."
+    value: ${{ steps.advisory.outputs.comment-action }}
 
 runs:
   using: composite
@@ -38,6 +45,7 @@ runs:
         MAQUINA_EVIDENCE_OUTPUT: ${{ inputs.evidence-output }}
         MAQUINA_REPOSITORY_ROOT: ${{ inputs.repository-root }}
         MAQUINA_CHECKS: ${{ inputs.checks }}
+        MAQUINA_PUBLISH_COMMENT: ${{ inputs.publish-comment }}
       run: |
         set -euo pipefail
         if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]]; then
@@ -69,3 +77,27 @@ runs:
         fi
         printf 'evidence-json=%s\n' "${json_records[0]#"$GITHUB_WORKSPACE/"}" >> "$GITHUB_OUTPUT"
         printf 'evidence-markdown=%s\n' "${markdown_records[0]#"$GITHUB_WORKSPACE/"}" >> "$GITHUB_OUTPUT"
+
+        if [[ "$MAQUINA_PUBLISH_COMMENT" != "true" ]]; then
+          echo "comment-action=disabled" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        same_repository="$(python3 -c 'import json, sys; event = json.load(open(sys.argv[1], encoding="utf-8")); head = event.get("pull_request", {}).get("head", {}).get("repo") or {}; repository = event.get("repository", {}); print("true" if head.get("full_name") == repository.get("full_name") else "false")' "$GITHUB_EVENT_PATH")"
+        if [[ "$same_repository" != "true" ]]; then
+          echo "Máquina comment publication is suppressed for fork pull requests."
+          echo "comment-action=suppressed" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        comment_output="$("$GITHUB_ACTION_PATH/bin/maquina-linux-amd64" github actions comment \
+          --input "${json_records[0]}" \
+          --trusted-same-repository)"
+        printf '%s\n' "$comment_output"
+        case "$comment_output" in
+          *"comment created"*) echo "comment-action=created" >> "$GITHUB_OUTPUT" ;;
+          *"comment updated"*) echo "comment-action=updated" >> "$GITHUB_OUTPUT" ;;
+          *)
+            echo "Máquina comment publisher returned an unrecognized result." >&2
+            exit 1
+            ;;
+        esac
