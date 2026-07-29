@@ -4,7 +4,7 @@ Precompiled, versioned GitHub Actions for Máquina's governed software-delivery 
 
 ## PR operational advisory
 
-`maquina-la/maquina-actions/pr-advisory@v0.1.1` runs the portable Máquina evaluator **inside the customer's GitHub Actions runner**. It requires no Go installation, source checkout from Máquina, external service, or model-provider credential.
+`maquina-la/maquina-actions/pr-advisory@v0.1.2` runs the portable Máquina evaluator **inside the customer's GitHub Actions runner**. It requires no Go installation, source checkout from Máquina, external service, or model-provider credential.
 
 The action reads the customer's checked-out Factory Contract and GitHub pull-request metadata using the supplied GitHub token. It writes only a sanitized JSON/Markdown evidence pair into the customer's workspace. It is an operational advisory, not a code review, code-quality judgment, or merge gate.
 
@@ -33,7 +33,7 @@ jobs:
           persist-credentials: false
 
       - id: maquina
-        uses: maquina-la/maquina-actions/pr-advisory@v0.1.1
+        uses: maquina-la/maquina-actions/pr-advisory@v0.1.2
         with:
           github-token: ${{ github.token }}
           repository-root: trusted
@@ -62,6 +62,6 @@ For higher-assurance use, pin the Action to an immutable commit SHA rather than 
 
 - `v0` is the moving compatibility tag for the pre-1.0 action.
 - Every release receives an immutable semantic tag and a GitHub Release with the binary's SHA-256 digest and the matching Máquina source commit.
-- The initial `v0.1.1` package is built from Máquina source commit `55e31af4394df7f1c925b6887350b7a5bda12c2e`.
+- `v0.1.2` is built from Máquina source commit `0cc0ef5f80cae081aec2c44d43534bfefee0ad50` and permits Git-only contracts: a customer needs `package.json` or a `Justfile` only when its own validation profile declares `pnpm …` or `just …`.
 
 Customer workflows must never grant write permissions merely to run the advisory. Evidence publication or PR-comment projection is a separate, explicitly configured concern.

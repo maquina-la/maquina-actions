@@ -1,14 +1,14 @@
 {
   "schema": "maquina.action_release.v1",
   "action": "pr-advisory",
-  "version": "v0.1.1",
+  "version": "v0.1.2",
   "source_repository": "https://github.com/maquina-la/maquina",
-  "source_commit": "55e31af4394df7f1c925b6887350b7a5bda12c2e",
+  "source_commit": "0cc0ef5f80cae081aec2c44d43534bfefee0ad50",
   "artifacts": [
     {
       "path": "bin/maquina-linux-amd64",
       "platform": "linux-amd64",
-      "sha256": "5559e076b300dd8232ba8ca2dc6bc34bcd557dffb38449ed96f4183d898e1d29"
+      "sha256": "12257300e181eb11352d1f07f40e5316a68f4d3fe7f56f6784336cfa4a674386"
     }
   ]
 }
