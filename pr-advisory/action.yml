@@ -91,7 +91,8 @@ runs:
 
         comment_output="$("$GITHUB_ACTION_PATH/bin/maquina-linux-amd64" github actions comment \
           --input "${json_records[0]}" \
-          --trusted-same-repository)"
+          --trusted-same-repository \
+          "$repository_root")"
         printf '%s\n' "$comment_output"
         case "$comment_output" in
           *"comment created"*) echo "comment-action=created" >> "$GITHUB_OUTPUT" ;;
