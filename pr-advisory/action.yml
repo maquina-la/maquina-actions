@@ -10,6 +10,10 @@ inputs:
     description: Repository-relative directory for sanitized evidence output.
     required: false
     default: .maquina/local/evidence-export
+  repository-root:
+    description: Repository-relative directory containing the trusted base revision and Factory Contract.
+    required: false
+    default: .
   checks:
     description: Newline-separated completed workflow evidence in NAME=CONCLUSION form.
     required: false
@@ -32,6 +36,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         MAQUINA_EVIDENCE_OUTPUT: ${{ inputs.evidence-output }}
+        MAQUINA_REPOSITORY_ROOT: ${{ inputs.repository-root }}
         MAQUINA_CHECKS: ${{ inputs.checks }}
       run: |
         set -euo pipefail
@@ -40,15 +45,22 @@ runs:
           exit 2
         fi
 
+        if [[ "$MAQUINA_REPOSITORY_ROOT" = /* || "$MAQUINA_REPOSITORY_ROOT" = *".."* ]]; then
+          echo "repository-root must be a safe repository-relative path." >&2
+          exit 2
+        fi
+        repository_root="$GITHUB_WORKSPACE/$MAQUINA_REPOSITORY_ROOT"
+        test -f "$repository_root/.maquina/factory-contract.json"
+
         args=(github actions advise --event "$GITHUB_EVENT_PATH" --evidence-output "$MAQUINA_EVIDENCE_OUTPUT")
         while IFS= read -r check; do
           [[ -z "$check" ]] && continue
           args+=(--check "$check")
         done <<< "$MAQUINA_CHECKS"
 
-        "$GITHUB_ACTION_PATH/bin/maquina-linux-amd64" "${args[@]}"
+        "$GITHUB_ACTION_PATH/bin/maquina-linux-amd64" "${args[@]}" "$repository_root"
 
-        evidence_root="$GITHUB_WORKSPACE/$MAQUINA_EVIDENCE_OUTPUT/evidence"
+        evidence_root="$repository_root/$MAQUINA_EVIDENCE_OUTPUT/evidence"
         mapfile -t json_records < <(find "$evidence_root" -type f -name '*.json' -print | sort)
         mapfile -t markdown_records < <(find "$evidence_root" -type f -name '*.md' -print | sort)
         if [[ "${#json_records[@]}" -ne 1 || "${#markdown_records[@]}" -ne 1 ]]; then

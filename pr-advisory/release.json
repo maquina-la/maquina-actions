@@ -1,7 +1,7 @@
 {
   "schema": "maquina.action_release.v1",
   "action": "pr-advisory",
-  "version": "v0.1.0",
+  "version": "v0.1.1",
   "source_repository": "https://github.com/maquina-la/maquina",
   "source_commit": "55e31af4394df7f1c925b6887350b7a5bda12c2e",
   "artifacts": [

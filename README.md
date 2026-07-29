@@ -4,7 +4,7 @@ Precompiled, versioned GitHub Actions for Máquina's governed software-delivery 
 
 ## PR operational advisory
 
-`maquina-la/maquina-actions/pr-advisory@v0` runs the portable Máquina evaluator **inside the customer's GitHub Actions runner**. It requires no Go installation, source checkout from Máquina, external service, or model-provider credential.
+`maquina-la/maquina-actions/pr-advisory@v0.1.1` runs the portable Máquina evaluator **inside the customer's GitHub Actions runner**. It requires no Go installation, source checkout from Máquina, external service, or model-provider credential.
 
 The action reads the customer's checked-out Factory Contract and GitHub pull-request metadata using the supplied GitHub token. It writes only a sanitized JSON/Markdown evidence pair into the customer's workspace. It is an operational advisory, not a code review, code-quality judgment, or merge gate.
 
@@ -24,14 +24,19 @@ jobs:
   advise:
     runs-on: ubuntu-latest
     steps:
+      # Contract and evaluator inputs must come from the trusted base revision,
+      # never from untrusted pull-request content.
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
           persist-credentials: false
 
       - id: maquina
-        uses: maquina-la/maquina-actions/pr-advisory@v0
+        uses: maquina-la/maquina-actions/pr-advisory@v0.1.1
         with:
           github-token: ${{ github.token }}
+          repository-root: trusted
           checks: |
             customer-ci=success
 
@@ -45,7 +50,7 @@ jobs:
           retention-days: 7
 ```
 
-The repository must include a valid `.maquina/factory-contract.json` and every path it declares. Start with the contract schema and a small PR-first policy; do not copy Máquina's own contract blindly.
+The repository's trusted base revision must include a valid `.maquina/factory-contract.json` and every path it declares. Start with the contract schema and a small PR-first policy; do not copy Máquina's own contract blindly. Run candidate validation in a separate, untrusted checkout, then pass only its bounded `NAME=CONCLUSION` result through `checks`—do not execute candidate code in the trusted advisory step.
 
 ## Trust boundary
 
@@ -57,6 +62,6 @@ For higher-assurance use, pin the Action to an immutable commit SHA rather than 
 
 - `v0` is the moving compatibility tag for the pre-1.0 action.
 - Every release receives an immutable semantic tag and a GitHub Release with the binary's SHA-256 digest and the matching Máquina source commit.
-- The initial `v0.1.0` package is built from Máquina source commit `55e31af4394df7f1c925b6887350b7a5bda12c2e`.
+- The initial `v0.1.1` package is built from Máquina source commit `55e31af4394df7f1c925b6887350b7a5bda12c2e`.
 
 Customer workflows must never grant write permissions merely to run the advisory. Evidence publication or PR-comment projection is a separate, explicitly configured concern.
