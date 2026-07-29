@@ -90,7 +90,7 @@ runs:
         fi
 
         comment_output="$("$GITHUB_ACTION_PATH/bin/maquina-linux-amd64" github actions comment \
-          --input "${json_records[0]}" \
+          --input "${json_records[0]#"$repository_root/"}" \
           --trusted-same-repository \
           "$repository_root")"
         printf '%s\n' "$comment_output"

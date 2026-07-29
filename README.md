@@ -4,7 +4,7 @@ Precompiled, versioned GitHub Actions for Máquina's governed software-delivery 
 
 ## PR operational advisory
 
-`maquina-la/maquina-actions/pr-advisory@v0.1.4` runs the portable Máquina evaluator **inside the customer's GitHub Actions runner**. It requires no Go installation, source checkout from Máquina, external service, or model-provider credential.
+`maquina-la/maquina-actions/pr-advisory@v0.1.5` runs the portable Máquina evaluator **inside the customer's GitHub Actions runner**. It requires no Go installation, source checkout from Máquina, external service, or model-provider credential.
 
 The action reads the customer's checked-out Factory Contract and GitHub pull-request metadata using the supplied GitHub token. It writes only a sanitized JSON/Markdown evidence pair into the customer's workspace. It is an operational advisory, not a code review, code-quality judgment, or merge gate.
 
@@ -33,7 +33,7 @@ jobs:
           persist-credentials: false
 
       - id: maquina
-        uses: maquina-la/maquina-actions/pr-advisory@v0.1.4
+        uses: maquina-la/maquina-actions/pr-advisory@v0.1.5
         with:
           github-token: ${{ github.token }}
           repository-root: trusted
@@ -62,7 +62,7 @@ For higher-assurance use, pin the Action to an immutable commit SHA rather than 
 
 - `v0` is the moving compatibility tag for the pre-1.0 action.
 - Every release receives an immutable semantic tag and a GitHub Release with the binary's SHA-256 digest and the matching Máquina source commit.
-- `v0.1.4` is built from Máquina source commit `0cc0ef5f80cae081aec2c44d43534bfefee0ad50`; it permits Git-only contracts and adds opt-in, same-repository PR comment projection.
+- `v0.1.5` is built from Máquina source commit `0cc0ef5f80cae081aec2c44d43534bfefee0ad50`; it permits Git-only contracts and adds opt-in, same-repository PR comment projection.
 
 ## Optional PR comment
 
