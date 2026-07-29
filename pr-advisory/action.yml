@@ -1,0 +1,59 @@
+name: Máquina PR advisory
+description: Run Máquina's precompiled, observe-only PR operational advisory inside a GitHub Actions runner.
+author: Máquina
+
+inputs:
+  github-token:
+    description: GitHub token with read-only pull-request, checks, and contents access.
+    required: true
+  evidence-output:
+    description: Repository-relative directory for sanitized evidence output.
+    required: false
+    default: .maquina/local/evidence-export
+  checks:
+    description: Newline-separated completed workflow evidence in NAME=CONCLUSION form.
+    required: false
+    default: ""
+
+outputs:
+  evidence-json:
+    description: Repository-relative path to the sanitized JSON evidence record.
+    value: ${{ steps.advisory.outputs.evidence-json }}
+  evidence-markdown:
+    description: Repository-relative path to the sanitized Markdown evidence record.
+    value: ${{ steps.advisory.outputs.evidence-markdown }}
+
+runs:
+  using: composite
+  steps:
+    - id: advisory
+      name: Run Máquina advisory
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        MAQUINA_EVIDENCE_OUTPUT: ${{ inputs.evidence-output }}
+        MAQUINA_CHECKS: ${{ inputs.checks }}
+      run: |
+        set -euo pipefail
+        if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]]; then
+          echo "Máquina PR advisory requires a pull_request event." >&2
+          exit 2
+        fi
+
+        args=(github actions advise --event "$GITHUB_EVENT_PATH" --evidence-output "$MAQUINA_EVIDENCE_OUTPUT")
+        while IFS= read -r check; do
+          [[ -z "$check" ]] && continue
+          args+=(--check "$check")
+        done <<< "$MAQUINA_CHECKS"
+
+        "$GITHUB_ACTION_PATH/bin/maquina-linux-amd64" "${args[@]}"
+
+        evidence_root="$GITHUB_WORKSPACE/$MAQUINA_EVIDENCE_OUTPUT/evidence"
+        mapfile -t json_records < <(find "$evidence_root" -type f -name '*.json' -print | sort)
+        mapfile -t markdown_records < <(find "$evidence_root" -type f -name '*.md' -print | sort)
+        if [[ "${#json_records[@]}" -ne 1 || "${#markdown_records[@]}" -ne 1 ]]; then
+          echo "Expected exactly one sanitized JSON and Markdown evidence record." >&2
+          exit 1
+        fi
+        printf 'evidence-json=%s\n' "${json_records[0]#"$GITHUB_WORKSPACE/"}" >> "$GITHUB_OUTPUT"
+        printf 'evidence-markdown=%s\n' "${markdown_records[0]#"$GITHUB_WORKSPACE/"}" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,36 @@
+name: Validate Actions
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-advisory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate release manifest and binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m json.tool pr-advisory/release.json >/dev/null
+          expected="$(python3 -c 'import json; print(json.load(open("pr-advisory/release.json"))["artifacts"][0]["sha256"])')"
+          actual="$(sha256sum pr-advisory/bin/maquina-linux-amd64 | awk '{print $1}')"
+          test "$actual" = "$expected"
+          test -x pr-advisory/bin/maquina-linux-amd64
+          pr-advisory/bin/maquina-linux-amd64 help >/dev/null
+
+      - name: Validate composite Action shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f pr-advisory/action.yml
+          grep -Fq 'using: composite' pr-advisory/action.yml
+          grep -Fq 'maquina-linux-amd64' pr-advisory/action.yml
